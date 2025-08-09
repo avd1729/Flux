@@ -28,9 +28,17 @@ jobs:
       - name: Install dependencies
         run: uv pip install -e .[dev]
 
+      - name: Cache NLTK data
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/nltk_data
+          key: nltk-${{ runner.os }}-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            nltk-${{ runner.os }}-
+
+      - name: Download NLTK data (punkt + punkt_tab)
+        run: |
+          uv run python -m nltk.downloader punkt punkt_tab
+
       - name: Run tests
         run: uv run pytest --maxfail=1 --disable-warnings -q
-      
-      - name: Run tests with coverage
-        run: uv run pytest --maxfail=1 --disable-warnings --cov=. --cov-report=xml
-
