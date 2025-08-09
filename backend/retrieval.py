@@ -1,5 +1,5 @@
-from embeddings import embed_texts
-from vector_store import load_index, search
+from .embeddings import embed_texts
+from .vector_store import load_index, search
 import numpy as np
 
 INDEX_DIM = 384
