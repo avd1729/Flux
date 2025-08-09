@@ -8,7 +8,6 @@ logger = logging.getLogger(__name__)
 INDEX_DIM = 384
 
 def deduplicate_results(results, similarity_threshold=0.9):
-    """Remove near-duplicate results based on text similarity"""
     if not results:
         return results
     
@@ -18,7 +17,6 @@ def deduplicate_results(results, similarity_threshold=0.9):
     for score, meta in results:
         text = meta.get('text', '')
         
-        # Simple deduplication - check if we've seen very similar text
         text_words = set(text.lower().split())
         
         is_duplicate = False
@@ -47,7 +45,6 @@ def deduplicate_results(results, similarity_threshold=0.9):
 def get_relevant_chunks(query, top_k=10):
     logger.info(f"Getting relevant chunks for query: {query[:50]}...")
     
-    # Load index fresh each time to get latest data
     index = load_index(INDEX_DIM)
     logger.info(f"Loaded index with {index.ntotal} vectors")
     
@@ -58,17 +55,14 @@ def get_relevant_chunks(query, top_k=10):
     q_emb = embed_texts([query])[0]
     logger.info(f"Generated query embedding with shape: {q_emb.shape}")
     
-    # Get more results initially to have options after deduplication
     search_k = min(top_k * 3, index.ntotal)
     scores, metas = search(index, q_emb, top_k=search_k)
     results = list(zip(scores, metas))
     
     logger.info(f"Retrieved {len(results)} raw results")
     
-    # Deduplicate results
     deduped_results = deduplicate_results(results, similarity_threshold=0.8)
     
-    # Take only the requested number of results
     final_results = deduped_results[:top_k]
     
     logger.info(f"After deduplication: {len(final_results)} unique results")

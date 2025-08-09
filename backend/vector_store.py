@@ -44,7 +44,7 @@ def add(index, vectors, metadatas):
     with open(META_PATH, "a", encoding='utf-8') as f:
         for i, m in enumerate(metadatas):
             f.write(json.dumps(m, ensure_ascii=False) + "\n")
-            if i == 0:  # Log first metadata entry
+            if i == 0: 
                 logger.info(f"First metadata entry: {m}")
 
 def search(index, qvec, top_k=5):

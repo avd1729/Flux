@@ -1,12 +1,11 @@
 from fastapi import FastAPI, UploadFile
-from .ingestion import process_pdf_bytes  # returns list of (chunk, meta)
+from .ingestion import process_pdf_bytes
 from .vector_store import load_index, add, save_index
 from .embeddings import embed_texts
 from .retrieval import get_relevant_chunks
 from .llm import generate_answer
 import logging
 
-# Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 

@@ -3,7 +3,7 @@ import requests
 
 BACKEND = "http://localhost:8000"
 
-st.title("College Assistant")
+st.title("Flux")
 
 uploaded = st.file_uploader("Upload PDF", type="pdf")
 if uploaded:

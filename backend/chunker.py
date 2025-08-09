@@ -3,7 +3,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Download required NLTK data
 try:
     nltk.data.find('tokenizers/punkt')
 except LookupError:
@@ -35,11 +34,9 @@ def split_text_into_chunks(text, chunk_size=500, overlap=100):
                 out.append(curr.strip())
                 logger.info(f"Created chunk {len(out)} of length {len(curr)}")
             
-            # Start a new chunk with overlap
             overlap_start = max(0, i - 2)
             curr = " ".join(sentences[overlap_start:i+1])
     
-    # Don't forget the last chunk
     if curr.strip():
         out.append(curr.strip())
         logger.info(f"Created final chunk {len(out)} of length {len(curr)}")
