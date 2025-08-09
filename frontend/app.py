@@ -3,7 +3,7 @@ import requests
 
 BACKEND = "http://localhost:8000"
 
-st.title("College Assistant — MVP")
+st.title("College Assistant")
 
 uploaded = st.file_uploader("Upload PDF", type="pdf")
 if uploaded:
@@ -13,8 +13,6 @@ if uploaded:
 q = st.text_input("Ask a question")
 if st.button("Ask") and q:
     r = requests.get(f"{BACKEND}/ask", params={"q": q})
-    st.write(f"Status code: {r.status_code}")
-    st.write(f"Response text: {repr(r.text)}")  # Show raw response
 
     try:
         data = r.json()

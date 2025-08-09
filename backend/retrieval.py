@@ -7,6 +7,43 @@ logger = logging.getLogger(__name__)
 
 INDEX_DIM = 384
 
+def deduplicate_results(results, similarity_threshold=0.9):
+    """Remove near-duplicate results based on text similarity"""
+    if not results:
+        return results
+    
+    deduped = []
+    seen_texts = set()
+    
+    for score, meta in results:
+        text = meta.get('text', '')
+        
+        # Simple deduplication - check if we've seen very similar text
+        text_words = set(text.lower().split())
+        
+        is_duplicate = False
+        for seen_text in seen_texts:
+            seen_words = set(seen_text.lower().split())
+            
+            # Calculate Jaccard similarity
+            intersection = len(text_words.intersection(seen_words))
+            union = len(text_words.union(seen_words))
+            
+            if union > 0:
+                similarity = intersection / union
+                if similarity > similarity_threshold:
+                    is_duplicate = True
+                    break
+        
+        if not is_duplicate:
+            deduped.append((score, meta))
+            seen_texts.add(text)
+            logger.info(f"Added unique result: score={score:.4f}, source={meta.get('source', 'unknown')}")
+        else:
+            logger.info(f"Skipped duplicate result: score={score:.4f}")
+    
+    return deduped
+
 def get_relevant_chunks(query, top_k=10):
     logger.info(f"Getting relevant chunks for query: {query[:50]}...")
     
@@ -21,11 +58,21 @@ def get_relevant_chunks(query, top_k=10):
     q_emb = embed_texts([query])[0]
     logger.info(f"Generated query embedding with shape: {q_emb.shape}")
     
-    scores, metas = search(index, q_emb, top_k=top_k)
+    # Get more results initially to have options after deduplication
+    search_k = min(top_k * 3, index.ntotal)
+    scores, metas = search(index, q_emb, top_k=search_k)
     results = list(zip(scores, metas))
     
-    logger.info(f"Retrieved {len(results)} results")
-    for i, (score, meta) in enumerate(results[:3]):  # Log first 3
+    logger.info(f"Retrieved {len(results)} raw results")
+    
+    # Deduplicate results
+    deduped_results = deduplicate_results(results, similarity_threshold=0.8)
+    
+    # Take only the requested number of results
+    final_results = deduped_results[:top_k]
+    
+    logger.info(f"After deduplication: {len(final_results)} unique results")
+    for i, (score, meta) in enumerate(final_results):
         logger.info(f"Result {i}: score={score:.4f}, source={meta.get('source', 'unknown')}")
     
-    return results
+    return final_results

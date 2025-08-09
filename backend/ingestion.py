@@ -26,6 +26,7 @@ def extract_pages(pdf_bytes):
 def process_pdf_bytes(pdf_bytes, filename):
     logger.info(f"Processing PDF: {filename}")
     chunks = []
+    seen_chunks = set()  # Track chunks we've already processed
     
     try:
         for page_num, page_text in extract_pages(pdf_bytes=pdf_bytes):
@@ -40,6 +41,14 @@ def process_pdf_bytes(pdf_bytes, filename):
                 if not chunk_text.strip():
                     logger.warning(f"Empty chunk {i} on page {page_num}")
                     continue
+                
+                # Check for duplicate chunks (normalize whitespace for comparison)
+                normalized_chunk = ' '.join(chunk_text.split())
+                if normalized_chunk in seen_chunks:
+                    logger.info(f"Skipping duplicate chunk on page {page_num}")
+                    continue
+                
+                seen_chunks.add(normalized_chunk)
                     
                 metadata = {
                     "source": filename,
@@ -56,5 +65,5 @@ def process_pdf_bytes(pdf_bytes, filename):
         import traceback
         traceback.print_exc()
     
-    logger.info(f"Total chunks created: {len(chunks)}")
+    logger.info(f"Total unique chunks created: {len(chunks)}")
     return chunks
