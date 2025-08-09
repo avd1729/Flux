@@ -1,25 +1,48 @@
 import nltk
-nltk.download('punkt')
+import logging
+
+logger = logging.getLogger(__name__)
+
+# Download required NLTK data
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt')
+
+try:
+    nltk.data.find('tokenizers/punkt_tab')
+except LookupError:
+    nltk.download('punkt_tab')
 
 def split_text_into_chunks(text, chunk_size=500, overlap=100):
+    if not text or not text.strip():
+        logger.warning("Empty text provided to chunker")
+        return []
+    
+    logger.info(f"Chunking text of length {len(text)}")
     
     sentences = nltk.sent_tokenize(text)
+    logger.info(f"Found {len(sentences)} sentences")
+    
     out = []
     curr = ""
-    for sentence in sentences:
-        if(len(curr) + len(sentence) <= chunk_size):
-            curr += " " + sentence
-        else:
-            out.append(curr.strip())
-            # start a new chunk
-            curr = " ".join(
-                # we can take last few sentences for overlap
-                sentences[
-                    max(0, sentences.index(sentence) - 2) : sentences.index(sentence) + 1
-                ]
-            )
     
+    for i, sentence in enumerate(sentences):
+        if len(curr) + len(sentence) <= chunk_size:
+            curr += " " + sentence if curr else sentence
+        else:
+            if curr.strip():
+                out.append(curr.strip())
+                logger.info(f"Created chunk {len(out)} of length {len(curr)}")
+            
+            # Start a new chunk with overlap
+            overlap_start = max(0, i - 2)
+            curr = " ".join(sentences[overlap_start:i+1])
+    
+    # Don't forget the last chunk
     if curr.strip():
         out.append(curr.strip())
-
+        logger.info(f"Created final chunk {len(out)} of length {len(curr)}")
+    
+    logger.info(f"Total chunks created: {len(out)}")
     return out

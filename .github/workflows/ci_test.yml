@@ -42,3 +42,9 @@ jobs:
 
       - name: Run tests
         run: uv run pytest --maxfail=1 --disable-warnings -q
+
+      - name: Cache HuggingFace models
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}
