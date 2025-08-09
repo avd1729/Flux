@@ -1,18 +1,18 @@
 import backend.retrieval
 
+import numpy as np
+
 class FakeIndex:
     def __init__(self, ntotal):
         self.ntotal = ntotal
 
 def test_get_relevant_chunks(monkeypatch):
-    # Mock embed_texts to return a fixed embedding
     def mock_embed_texts(texts):
         assert texts == ["test query"]
-        return [[0.1, 0.2, 0.3]]
+        return [np.array([0.1, 0.2, 0.3])]
 
-    # Mock search to return predictable results
     def mock_search(index, q_emb, top_k):
-        assert q_emb == [0.1, 0.2, 0.3]
+        assert list(q_emb) == [0.1, 0.2, 0.3]
         assert top_k == 3
         return [0.9, 0.8, 0.7], [
             {"page": 1, "text": "Chunk 1"},
@@ -20,10 +20,9 @@ def test_get_relevant_chunks(monkeypatch):
             {"page": 3, "text": "Chunk 3"},
         ]
 
-    # Mock load_index to return a fake index with ntotal > 0
     def mock_load_index(dim):
-        assert dim == 384  # or INDEX_DIM if you import it
-        return FakeIndex(ntotal=10)  # non-zero so function continues
+        assert dim == 384
+        return FakeIndex(ntotal=10)
 
     monkeypatch.setattr(backend.retrieval, "embed_texts", mock_embed_texts)
     monkeypatch.setattr(backend.retrieval, "search", mock_search)
