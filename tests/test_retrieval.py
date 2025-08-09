@@ -13,7 +13,7 @@ def test_get_relevant_chunks(monkeypatch):
 
     def mock_search(index, q_emb, top_k):
         assert list(q_emb) == [0.1, 0.2, 0.3]
-        assert top_k == 3
+        assert top_k == 10
         return [0.9, 0.8, 0.7], [
             {"page": 1, "text": "Chunk 1"},
             {"page": 2, "text": "Chunk 2"},
