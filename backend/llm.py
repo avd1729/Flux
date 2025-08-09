@@ -1,75 +1,83 @@
-import re
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 import logging
 
 logger = logging.getLogger(__name__)
 
-def simple_answer_extraction(question, context):
-    """Fallback method to extract answers directly from context"""
+MODEL_NAME = "google/flan-t5-base"
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME)
+
+
+def generate_answer_with_flan(question, context, max_tokens=128):
     
-    question_lower = question.lower()
-    context_lower = context.lower()
+    prompt = f"Please answer this question using only the provided information.\n\nInformation:\n{context}\n\nQuestion: {question}\n\nAnswer:"
     
-    # Look for definition patterns
-    if "what is" in question_lower or "define" in question_lower:
-        # Look for definition patterns in context
-        patterns = [
-            r'definition:\s*([^•\n]+)',
-            r'is\s+([^•\n\.]+)',
-            r':\s+([A-Z][^•\n\.]+)',
-        ]
+    try:
+        # Tokenize with proper truncation
+        inputs = tokenizer(
+            prompt, 
+            return_tensors="pt", 
+            max_length=512, 
+            truncation=True,
+            padding=True
+        )
         
-        for pattern in patterns:
-            match = re.search(pattern, context, re.IGNORECASE)
-            if match:
-                definition = match.group(1).strip()
-                if len(definition) > 10:  # Ensure it's substantial
-                    return f"Based on the provided materials: {definition}"
-    
-    # Look for direct answers
-    sentences = re.split(r'[.!?]+', context)
-    question_words = set(question_lower.split())
-    
-    best_sentence = ""
-    best_score = 0
-    
-    for sentence in sentences:
-        if len(sentence.strip()) < 10:
-            continue
+        # Generate with good parameters for FLAN-T5
+        with tokenizer.as_target_tokenizer():
+            outputs = model.generate(
+                input_ids=inputs['input_ids'],
+                attention_mask=inputs['attention_mask'],
+                max_new_tokens=max_tokens,
+                num_beams=2,  # Small beam search for better quality
+                do_sample=False,
+                early_stopping=True,
+                pad_token_id=tokenizer.pad_token_id,
+                eos_token_id=tokenizer.eos_token_id,
+                no_repeat_ngram_size=3  # Avoid repetitive text
+            )
+        
+        # Decode the response
+        generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        
+        logger.info(f"FLAN-T5 raw output: {generated_text}")
+        
+        # Clean up the response
+        answer = generated_text.strip()
+        
+        # If the answer is too short, empty, or just repeats the prompt
+        if (not answer or 
+            len(answer) < 5 or 
+            answer.lower() in ["i don't know", "i don't know.", "no", "yes"] or
+            prompt.lower() in answer.lower()):
+            logger.info("FLAN-T5 gave insufficient answer, using fallback")
+            return None
             
-        sentence_words = set(sentence.lower().split())
-        overlap = len(question_words.intersection(sentence_words))
+        # Format the answer nicely
+        if not answer.startswith("Based on"):
+            answer = f"Based on the provided materials: {answer}"
+            
+        return answer
         
-        if overlap > best_score:
-            best_score = overlap
-            best_sentence = sentence.strip()
-    
-    if best_sentence and best_score >= 2:
-        return f"Based on the provided materials: {best_sentence}"
-    
-    # If we have context but no good match, return first substantial sentence
-    sentences = [s.strip() for s in re.split(r'[.!?]+', context) if len(s.strip()) > 20]
-    if sentences:
-        return f"Based on the provided materials: {sentences[0]}"
-    
-    return "I don't know based on the provided materials."
+    except Exception as e:
+        logger.error(f"FLAN-T5 generation failed: {e}")
+        return None
 
 def generate_answer(question, context, max_tokens=256):
-    """Try FLAN-T5 first, fallback to simple extraction"""
     
     context = context.strip()
     question = question.strip()
     
     logger.info(f"Generating answer for question: {question}")
-    logger.info(f"Context preview: {context[:200]}...")
+    logger.info(f"Context length: {len(context)} chars")
     
     if not context or context == "[NO TEXT]":
         return "I don't know based on the provided materials."
+
+    logger.info("Attempting FLAN-T5 generation...")
+    flan_answer = generate_answer_with_flan(question, context, max_tokens=128)
     
-    # For now, let's use the simple extraction method since FLAN-T5 is having issues
-    try:
-        answer = simple_answer_extraction(question, context)
-        logger.info(f"Generated answer: {answer}")
-        return answer
-    except Exception as e:
-        logger.error(f"Error generating answer: {e}")
-        return "I don't know based on the provided materials."
+    if flan_answer:
+        logger.info(f"FLAN-T5 succeeded: {flan_answer[:100]}...")
+        return flan_answer
+    
+    return "I don't know based on the provided materials."
