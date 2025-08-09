@@ -1,5 +1,5 @@
 import fitz
-from chunker import split_text_into_chunks
+from .chunker import split_text_into_chunks
 
 def extract_pages(pdf_bytes):
     doc = fitz.open(

@@ -11,8 +11,14 @@ dependencies = [
     "nltk>=3.9.1",
     "pymupdf>=1.26.3",
     "pytest>=8.4.1",
+    "pytest-cov>=6.2.1",
     "requests>=2.32.4",
     "sentence-transformers>=5.1.0",
     "streamlit>=1.48.0",
     "uvicorn>=0.35.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = [
+    "."
 ]
