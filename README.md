@@ -1,4 +1,4 @@
-# Retrieval-Augmented Generation (RAG) Project MVP
+# Flux
 
 This is the MVP for a document-based question answering system. You can upload PDFs, process and chunk the content, generate embeddings using open-source models, store them in a vector store, and query to get relevant answers.
 
@@ -32,8 +32,8 @@ This is the MVP for a document-based question answering system. You can upload P
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/avd1729/college-assistant
-   cd college-assistant
+   git clone https://github.com/avd1729/Flux
+   cd Flux
    ```
 
 2. Create a virtual environment using `uv` (I assume you mean `python -m venv` or maybe `uvicorn`? If you meant something else, replace accordingly):
@@ -139,5 +139,6 @@ make frontend
 
 * **Environment issues:**
   Make sure your venv is activated and dependencies installed properly.
+
 
 
