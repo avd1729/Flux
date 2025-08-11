@@ -23,6 +23,16 @@ def extract_pages(pdf_bytes):
             logger.warning(f"Page {page_idx + 1} is empty!")
         yield page_idx + 1, text
 
+# sample realm detector
+def detect_realm(text, filename):
+    if "invoice" in filename.lower() or "payment" in text.lower():
+        return "finance"
+    elif "patient" in text.lower() or "diagnosis" in text.lower():
+        return "medical"
+    else:
+        return "general"
+    
+
 def process_pdf_bytes(pdf_bytes, filename):
     logger.info(f"Processing PDF: {filename}")
     chunks = []
@@ -49,11 +59,13 @@ def process_pdf_bytes(pdf_bytes, filename):
                     continue
                 
                 seen_chunks.add(normalized_chunk)
-                    
+                chunk_id = f"{filename}_p{page_num}_c{i}"   
                 metadata = {
+                    "chunk_id": chunk_id,
                     "source": filename,
                     "page": page_num,
-                    "text": chunk_text
+                    "text": chunk_text,
+                    "realm": detect_realm(chunk_text, filename)
                 }
                 chunks.append((chunk_text, metadata))
                 
