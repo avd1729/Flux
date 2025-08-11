@@ -80,16 +80,18 @@ def ask(q: str, top_k: int = 3):
         else:
             logger.info(f"Hit {i} has no 'text' key! Available keys: {list(meta.keys())}")
     
-    # Build context
-    context = "\n\n".join([
-        f"{h.get('text', '[NO TEXT]')} (Source: {h.get('source', 'unknown')}, page {h.get('page', 'N/A')})"
+    context_docs = [
+        {"text": h.get("text", "[NO TEXT]"), **h}  # preserve all metadata
         for _, h in hits
-    ])
+    ]
     
-    logger.info(f"Context length: {len(context)}")
-    logger.info(f"Context preview: {context[:200]}...")
-    
-    answer = generate_answer(q, context)
+    answer = generate_answer(q, context_docs)
     logger.info(f"Generated answer: {answer}")
     
-    return {"answer": answer, "sources": [h for _, h in hits], "debug": {"context_preview": context[:200]}}
+    return {
+        "answer": answer,
+        "sources": [h for _, h in hits],
+        "debug": {
+            "first_doc_preview": context_docs[0]["text"][:200] if context_docs else ""
+        }
+    }
