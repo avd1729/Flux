@@ -5,7 +5,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-INDEX_DIM = 384
+INDEX_DIM = 768  # Realm uses 768-dim embeddings
 
 def deduplicate_results(results, similarity_threshold=0.9):
     if not results:
@@ -52,6 +52,7 @@ def get_relevant_chunks(query, top_k=10):
         logger.warning("Index is empty - no documents have been ingested yet")
         return []
     
+    # Use Realm query embeddings
     q_emb = embed_texts([query])[0]
     logger.info(f"Generated query embedding with shape: {q_emb.shape}")
     
