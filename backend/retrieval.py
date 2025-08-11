@@ -42,14 +42,18 @@ def deduplicate_results(results, similarity_threshold=0.9):
     
     return deduped
 
-def get_relevant_chunks(query, top_k=10):
-    logger.info(f"Getting relevant chunks for query: {query[:50]}...")
-    
-    index = load_index(INDEX_DIM)
-    logger.info(f"Loaded index with {index.ntotal} vectors")
+def get_relevant_chunks(query, realm_id, top_k=10):
+    """
+    Retrieve top-k most relevant chunks for a query from the specified realm.
+    """
+    logger.info(f"Getting relevant chunks for realm={realm_id}, query: {query[:50]}...")
+
+    # Load the correct realm-specific index
+    index = load_index(realm_id, INDEX_DIM)
+    logger.info(f"Loaded index with {index.ntotal} vectors for realm={realm_id}")
     
     if index.ntotal == 0:
-        logger.warning("Index is empty - no documents have been ingested yet")
+        logger.warning(f"Index for realm={realm_id} is empty - no documents ingested yet")
         return []
     
     # Use Realm query embeddings
@@ -57,7 +61,7 @@ def get_relevant_chunks(query, top_k=10):
     logger.info(f"Generated query embedding with shape: {q_emb.shape}")
     
     search_k = min(top_k * 3, index.ntotal)
-    scores, metas = search(index, q_emb, top_k=search_k)
+    scores, metas = search(realm_id, index, q_emb, top_k=search_k)
     results = list(zip(scores, metas))
     
     logger.info(f"Retrieved {len(results)} raw results")
@@ -66,7 +70,7 @@ def get_relevant_chunks(query, top_k=10):
     
     final_results = deduped_results[:top_k]
     
-    logger.info(f"After deduplication: {len(final_results)} unique results")
+    logger.info(f"After deduplication: {len(final_results)} unique results for realm={realm_id}")
     for i, (score, meta) in enumerate(final_results):
         logger.info(f"Result {i}: score={score:.4f}, source={meta.get('source', 'unknown')}")
     

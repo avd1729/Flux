@@ -9,10 +9,11 @@ def test_get_relevant_chunks(monkeypatch):
     # Mock Realm query embedding
     def mock_embed_texts(texts):
         assert texts == ["test query"]
-        return [np.array([0.1, 0.2, 0.3])]  # shape: (3,) for simplicity in test
+        return [np.array([0.1, 0.2, 0.3], dtype=np.float32)]  # shape: (3,)
 
     # Mock vector search
-    def mock_search(index, q_emb, top_k):
+    def mock_search(realm_id, index, q_emb, top_k):
+        assert realm_id == "realm_test"
         assert list(q_emb) == [0.1, 0.2, 0.3]
         assert top_k == 10
         return [0.9, 0.8, 0.7], [
@@ -22,7 +23,8 @@ def test_get_relevant_chunks(monkeypatch):
         ]
 
     # Mock index loader
-    def mock_load_index(dim):
+    def mock_load_index(realm_id, dim):
+        assert realm_id == "realm_test"
         assert dim == 768  # Realm embedding dimension
         return FakeIndex(ntotal=10)
 
@@ -31,7 +33,7 @@ def test_get_relevant_chunks(monkeypatch):
     monkeypatch.setattr(backend.retrieval, "search", mock_search)
     monkeypatch.setattr(backend.retrieval, "load_index", mock_load_index)
 
-    result = backend.retrieval.get_relevant_chunks("test query")
+    result = backend.retrieval.get_relevant_chunks("test query", realm_id="realm_test")
 
     expected = [
         (0.9, {"page": 1, "text": "Chunk 1"}),
